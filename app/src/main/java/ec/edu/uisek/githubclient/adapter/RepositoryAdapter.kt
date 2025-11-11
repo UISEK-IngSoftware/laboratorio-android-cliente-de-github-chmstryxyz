@@ -6,10 +6,14 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import ec.edu.uisek.githubclient.R
 import ec.edu.uisek.githubclient.model.Repository
 
-class RepositoryAdapter(private val repositoryList: List<Repository>) :
+class RepositoryAdapter(
+
+    private val repositoryList: MutableList<Repository>
+) :
     RecyclerView.Adapter<RepositoryAdapter.RepositoryViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RepositoryViewHolder {
@@ -22,9 +26,23 @@ class RepositoryAdapter(private val repositoryList: List<Repository>) :
         val repository = repositoryList[position]
         holder.repoName.text = repository.name
         holder.repoDescription.text = repository.description
+
+
+        Glide.with(holder.itemView.context)
+            .load(repository.avatarUrl)
+            .placeholder(R.mipmap.ic_launcher)
+            .circleCrop()
+            .into(holder.repoIcon)
     }
 
     override fun getItemCount() = repositoryList.size
+
+
+    fun updateData(newRepos: List<Repository>) {
+        repositoryList.clear()
+        repositoryList.addAll(newRepos)
+        notifyDataSetChanged()
+    }
 
     class RepositoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val repoName: TextView = itemView.findViewById(R.id.tv_repo_name)
