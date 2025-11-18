@@ -6,9 +6,4 @@
         android:icon="@drawable/ic_list"
         android:title="Repositorios"
         app:showAsAction="ifRoom" />
-    <item
-        android:id="@id/projectFormFragment"
-        android:icon="@drawable/ic_add"
-        android:title="Nuevo Proyecto"
-        app:showAsAction="ifRoom" />
 </menu>

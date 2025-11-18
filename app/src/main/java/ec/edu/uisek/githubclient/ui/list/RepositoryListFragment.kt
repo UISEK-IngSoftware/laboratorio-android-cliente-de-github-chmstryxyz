@@ -9,7 +9,9 @@ import android.widget.ProgressBar
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController // AÑADIDO
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.floatingactionbutton.FloatingActionButton // AÑADIDO
 import ec.edu.uisek.githubclient.R
 import ec.edu.uisek.githubclient.adapter.RepositoryAdapter
 import ec.edu.uisek.githubclient.model.Repository
@@ -20,7 +22,7 @@ class RepositoryListFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
-
+    private lateinit var fabAddRepo: FloatingActionButton
 
     private val adapter = RepositoryAdapter(mutableListOf())
 
@@ -36,9 +38,13 @@ class RepositoryListFragment : Fragment() {
 
         recyclerView = view.findViewById(R.id.rv_repositories)
         progressBar = view.findViewById(R.id.progress_bar)
+        fabAddRepo = view.findViewById(R.id.fab_add_repo)
 
         recyclerView.adapter = adapter
 
+        fabAddRepo.setOnClickListener {
+            findNavController().navigate(R.id.projectFormFragment)
+        }
 
         fetchData("google")
     }
@@ -83,5 +89,4 @@ class RepositoryListFragment : Fragment() {
             }
         }
     }
-
 }
