@@ -27,6 +27,9 @@ class ProjectFormFragment : Fragment() {
     private lateinit var btnCancel: Button
     private lateinit var progressBar: ProgressBar
 
+    private var repoOwner: String? = null
+    private var isEditMode = false
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -43,6 +46,14 @@ class ProjectFormFragment : Fragment() {
         btnSave = view.findViewById(R.id.btn_save)
         btnCancel = view.findViewById(R.id.btn_cancel)
         progressBar = view.findViewById(R.id.form_progress_bar)
+
+        arguments?.let {
+            isEditMode = true
+            repoOwner = it.getString("repoOwner")
+            etProjectName.setText(it.getString("repoName"))
+            etProjectDescription.setText(it.getString("repoDescription"))
+            etProjectName.isEnabled = false
+        }
 
         btnSave.setOnClickListener {
             handleSaveClick()
@@ -70,39 +81,39 @@ class ProjectFormFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val response = RetrofitClient.gitHubApiService.createRepo(request)
-
-                if (response.isSuccessful) {
-                    val newRepo = response.body()
-                    Toast.makeText(
-                        requireContext(),
-                        "Repositorio '${newRepo?.name}' creado con éxito",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    findNavController().popBackStack()
-
+                if (isEditMode) {
+                    updateRepository(repoOwner!!, name, request)
                 } else {
-                    val errorBody = response.errorBody()?.string()
-                    Log.e("ProjectFormFragment", "Error API ${response.code()}: $errorBody")
-                    Toast.makeText(
-                        requireContext(),
-                        "Error al crear: ${response.message()}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    createRepository(request)
                 }
-
             } catch (e: Exception) {
-                // Manejar error de red u otro
-                Log.e("ProjectFormFragment", "Excepción al crear repo", e)
-                Toast.makeText(
-                    requireContext(),
-                    "Error: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-            } finally {
+                Log.e("ProjectFormFragment", "Excepción al guardar repo", e)
+                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 setLoading(false)
             }
         }
+    }
+
+    private suspend fun createRepository(request: CreateRepoRequest) {
+        val response = RetrofitClient.gitHubApiService.createRepo(request)
+        if (response.isSuccessful) {
+            Toast.makeText(requireContext(), "Repositorio creado", Toast.LENGTH_SHORT).show()
+            findNavController().popBackStack()
+        } else {
+            Toast.makeText(requireContext(), "Error al crear", Toast.LENGTH_SHORT).show()
+        }
+        setLoading(false)
+    }
+
+    private suspend fun updateRepository(owner: String, repoName: String, request: CreateRepoRequest) {
+        val response = RetrofitClient.gitHubApiService.updateRepo(owner, repoName, request)
+        if (response.isSuccessful) {
+            Toast.makeText(requireContext(), "Repositorio actualizado", Toast.LENGTH_SHORT).show()
+            findNavController().popBackStack()
+        } else {
+            Toast.makeText(requireContext(), "Error al actualizar", Toast.LENGTH_SHORT).show()
+        }
+        setLoading(false)
     }
 
     private fun setLoading(isLoading: Boolean) {
