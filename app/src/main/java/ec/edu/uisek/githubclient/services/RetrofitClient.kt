@@ -1,44 +1,36 @@
-// Archivo: app/src/main/java/ec/edu/uisek/githubclient/services/RetrofitClient.kt
 package ec.edu.uisek.githubclient.services
 
-import android.util.Log
-import ec.edu.uisek.githubclient.BuildConfig
+import android.content.Context
+import ec.edu.uisek.githubclient.utils.SessionManager
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-object RetrofitClient {
+class RetrofitClient(context: Context) {
 
-    private const val TAG = "RetrofitClient"
-    private const val BASE_URL = "https://api.github.com/"
+    private val sessionManager = SessionManager(context)
+    private val BASE_URL = "https://api.github.com/"
 
     private val authInterceptor = Interceptor { chain ->
         val originalRequest = chain.request()
-        val token = BuildConfig.GITHUB_API_TOKEN
+        val token = sessionManager.getAuthToken()
 
-        val newRequest = if (token.isNotEmpty()) {
+        val newRequest = if (!token.isNullOrEmpty()) {
             originalRequest.newBuilder()
                 .addHeader("Authorization", "Bearer $token")
                 .addHeader("Accept", "application/vnd.github.v3+json")
                 .build()
         } else {
-            Log.w(TAG, "⚠️ Token de GitHub NO configurado")
-            originalRequest.newBuilder()
-                .addHeader("Accept", "application/vnd.github.v3+json")
-                .build()
+            originalRequest
         }
 
         chain.proceed(newRequest)
     }
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = if (BuildConfig.DEBUG) {
-            HttpLoggingInterceptor.Level.BASIC
-        } else {
-            HttpLoggingInterceptor.Level.NONE
-        }
+        level = HttpLoggingInterceptor.Level.BODY
     }
 
     private val okHttpClient = OkHttpClient.Builder()

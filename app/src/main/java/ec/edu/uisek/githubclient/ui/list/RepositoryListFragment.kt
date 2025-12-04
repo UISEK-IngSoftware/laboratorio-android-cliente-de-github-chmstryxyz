@@ -17,6 +17,7 @@ import ec.edu.uisek.githubclient.R
 import ec.edu.uisek.githubclient.adapter.RepositoryAdapter
 import ec.edu.uisek.githubclient.model.Repository
 import ec.edu.uisek.githubclient.services.RetrofitClient
+import ec.edu.uisek.githubclient.utils.SessionManager
 import kotlinx.coroutines.launch
 
 class RepositoryListFragment : Fragment() {
@@ -24,10 +25,9 @@ class RepositoryListFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var fabAddRepo: FloatingActionButton
-
     private lateinit var adapter: RepositoryAdapter
-
-    private val githubUsername = "chmstryxyz"
+    private lateinit var retrofitClient: RetrofitClient
+    private lateinit var sessionManager: SessionManager
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -38,6 +38,12 @@ class RepositoryListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        retrofitClient = RetrofitClient(requireContext())
+        sessionManager = SessionManager(requireContext())
+
+        // Obtener usuario dinámico
+        val githubUsername = sessionManager.getUserName() ?: ""
 
         recyclerView = view.findViewById(R.id.rv_repositories)
         progressBar = view.findViewById(R.id.progress_bar)
@@ -61,10 +67,15 @@ class RepositoryListFragment : Fragment() {
         recyclerView.adapter = adapter
 
         fabAddRepo.setOnClickListener {
+            // El FAB lanza el formulario para crear nuevo repo
             findNavController().navigate(R.id.projectFormFragment)
         }
 
-        fetchData(githubUsername)
+        if (githubUsername.isNotEmpty()) {
+            fetchData(githubUsername)
+        } else {
+            Toast.makeText(requireContext(), "Error de sesión: Usuario no encontrado", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun fetchData(username: String) {
@@ -72,7 +83,7 @@ class RepositoryListFragment : Fragment() {
             try {
                 progressBar.isVisible = true
                 recyclerView.isVisible = false
-                val response = RetrofitClient.gitHubApiService.getUserRepos(username)
+                val response = retrofitClient.gitHubApiService.getUserRepos(username)
                 if (response.isSuccessful) {
                     val apiRepos = response.body() ?: emptyList()
                     val uiRepos = apiRepos.map { apiRepo ->
@@ -86,6 +97,7 @@ class RepositoryListFragment : Fragment() {
                     adapter.updateData(uiRepos)
                 } else {
                     Log.e("RepoListFragment", "Error en la API: ${response.code()}")
+                    Toast.makeText(requireContext(), "Error al cargar datos", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Log.e("RepoListFragment", "Excepción al llamar a la API", e)
@@ -99,16 +111,17 @@ class RepositoryListFragment : Fragment() {
     private fun deleteRepository(owner: String, repoName: String) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val response = RetrofitClient.gitHubApiService.deleteRepo(owner, repoName)
+                val response = retrofitClient.gitHubApiService.deleteRepo(owner, repoName)
                 if (response.isSuccessful) {
                     Toast.makeText(requireContext(), "Repositorio eliminado", Toast.LENGTH_SHORT).show()
-                    fetchData(githubUsername)
+                    val user = sessionManager.getUserName()
+                    if (user != null) fetchData(user)
                 } else {
-                    Toast.makeText(requireContext(), "Error al eliminar", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Error al eliminar: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Log.e("RepoListFragment", "Excepción al eliminar", e)
-                Toast.makeText(requireContext(), "Error al eliminar", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Error de red al eliminar", Toast.LENGTH_SHORT).show()
             }
         }
     }

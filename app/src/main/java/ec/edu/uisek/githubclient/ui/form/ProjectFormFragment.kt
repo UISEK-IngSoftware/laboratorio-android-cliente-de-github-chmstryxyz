@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 
 class ProjectFormFragment : Fragment() {
 
+    private lateinit var retrofitClient: RetrofitClient
     private lateinit var etProjectName: TextInputEditText
     private lateinit var tilProjectName: TextInputLayout
     private lateinit var etProjectDescription: TextInputEditText
@@ -95,23 +96,23 @@ class ProjectFormFragment : Fragment() {
     }
 
     private suspend fun createRepository(request: CreateRepoRequest) {
-        val response = RetrofitClient.gitHubApiService.createRepo(request)
+        val response = retrofitClient.gitHubApiService.createRepo(request)
         if (response.isSuccessful) {
             Toast.makeText(requireContext(), "Repositorio creado", Toast.LENGTH_SHORT).show()
             findNavController().popBackStack()
         } else {
-            Toast.makeText(requireContext(), "Error al crear", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Error al crear: ${response.code()}", Toast.LENGTH_SHORT).show()
         }
         setLoading(false)
     }
 
     private suspend fun updateRepository(owner: String, repoName: String, request: CreateRepoRequest) {
-        val response = RetrofitClient.gitHubApiService.updateRepo(owner, repoName, request)
+        val response = retrofitClient.gitHubApiService.updateRepo(owner, repoName, request)
         if (response.isSuccessful) {
             Toast.makeText(requireContext(), "Repositorio actualizado", Toast.LENGTH_SHORT).show()
             findNavController().popBackStack()
         } else {
-            Toast.makeText(requireContext(), "Error al actualizar", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Error al actualizar: ${response.code()}", Toast.LENGTH_SHORT).show()
         }
         setLoading(false)
     }
